@@ -9,6 +9,38 @@ var userSchema = new mongoose.Schema({
 })
 mongoose.model("user", userSchema)
 
+var sideNavSubLevelThreechema = new mongoose.Schema({
+    "key":{'type':String, require:true},
+    "title":{'type':String, require:true},
+    "icon":{'type':String, require:true},
+})
+
+var sideNavSubLevelTwochema = new mongoose.Schema({
+    "key":{'type':String, require:true},
+    "title":{'type':String, require:true},
+    "icon":{'type':String, require:true},
+    "subs":[sideNavSubLevelThreechema]
+})
+
+var sideNavSubLevelOnechema = new mongoose.Schema({
+    "key":{'type':String, require:true},
+    "title":{'type':String, require:true},
+    "icon":{'type':String, require:true},
+    "subs":[sideNavSubLevelTwochema]
+})
+
+var sideNavShema = new mongoose.Schema({
+    "title":{'type':String, require:true},
+    "icon":{'type':String, require:true},
+    "key":{'type':String, require:true},
+    "subs":[sideNavSubLevelOnechema]
+})
+
+var metaSideNavSchema = new mongoose.Schema({
+    "meta":[sideNavShema],
+})
+mongoose.model('metaSideNav', metaSideNavSchema)
+
 // 博客首页显示的章节 保存章节标题，章节描述，作者等信息
 var blogChapterSchema = new mongoose.Schema({
     "chapTitle":{'type':String, require:true},
