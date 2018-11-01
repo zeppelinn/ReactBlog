@@ -29,19 +29,18 @@ class HeaderBar extends Component {
 
 
     componentDidMount = () => {
-        screenfull.onchange(() => {
-            this.updateState({
-                icon: screenfull.isFullscreen ? 'shrink' : 'arrows-alt'
-            })
-        })
+        // screenfull.onchange(() => {
+        //     this.updateState({
+        //         icon: screenfull.isFullscreen ? 'shrink' : 'arrows-alt'
+        //     })
+        // })
     }
 
     componentWillUnmount = () => {
-        screenfull.off('change')
+        // screenfull.off('change')
     }
 
     toggle = () => {
-        console.log('click ---->toggle')
         this.props.toggle()
     }
 
@@ -53,7 +52,7 @@ class HeaderBar extends Component {
 
     // 退出登录，调用store的toggleLogin修改登录状态，删除cookie，并刷新页面
     logout = () => {
-        this.props.userStore.toggleLogin(false)
+        this.props.userStore.handleLogout()
         this.props.history.push(this.props.location.pathname)
     }
 
@@ -67,7 +66,7 @@ class HeaderBar extends Component {
 
         const unLogin = (
             <div>
-                <Link to={{pathname: '/login', state: {from: location}}} style={{color: 'rgba(0, 0, 0, 0.65)'}}>登录/注册</Link>&nbsp;
+                <Link to={{pathname: '/login', state: {from: location}}} style={{ marginRight:"5px", textDecoration:"null", color: 'rgba(0, 0, 0, 0.65)'}}>登录/注册</Link>&nbsp;
                 <img src={require('../../assets/img/defaultUser.jpg')} alt=""/>
             </div>
         )

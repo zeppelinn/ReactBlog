@@ -2,13 +2,9 @@ const mongoose = require("mongoose");
 const DB_URL = "mongodb://localhost:27017/my_test_blog"
 mongoose.connect(DB_URL);
 
-// 用户信息
-var userSchema = new mongoose.Schema({
-    "username":{'type':String, require:true},
-    "password":{'type':String, require:true}
-})
-mongoose.model("user", userSchema)
 
+
+// 侧边栏标签，最多三级
 var sideNavSubLevelThreechema = new mongoose.Schema({
     "key":{'type':String, require:true},
     "title":{'type':String, require:true},
@@ -39,41 +35,79 @@ var sideNavShema = new mongoose.Schema({
 var metaSideNavSchema = new mongoose.Schema({
     "meta":[sideNavShema],
 })
-mongoose.model('metaSideNav', metaSideNavSchema)
 
-// 博客首页显示的章节 保存章节标题，章节描述，作者等信息
-var blogChapterSchema = new mongoose.Schema({
-    "chapTitle":{'type':String, require:true},
-    "desc":{'type':String, require:true},
-    "author":{'type':String, require:true},
-    "date":{'type':Date, default: new Date().getTime()},
-    // 关联章节中具体的文章内容，即blogItem
-    "items":[{'type':mongoose.Schema.Types.ObjectId}],
+// 评论回复，包括 回复内容 回复发送者 回复接受者 以及发送回复者的_id（当前客户端中的cookie）
+var replySchema = new mongoose.Schema({
+    "content":{"type":String, require: true},
+    "from":{"type":String, require: true},
+    "to":{"type":String, require: true},
 })
-mongoose.model("blogChapter", blogChapterSchema)
 
-// 评论 保存评论内容、评论者和评论发布时间
+// 博客评论，包括 评论内容，评论下方回复以及评论人
 var commentSchema = new mongoose.Schema({
-    "date":{'type':Date, default: new Date().getTime()},
-    "content":{'type':String, require:true},
-    "from":{'type':String},
+    "content":{"type":String, require: true},
+    "replies":[replySchema],
+    "from":{"type":String, require: true},
 })
+
+// 博客内容，包括 标题、内容描述、正文内容、作者、发布时间以及评论
+// 每条评论下面又关联了回复
+var blogSchema = new mongoose.Schema({
+    "key":{"type":String, require: true},
+    "title":{'type':String, require:true},
+    "content":{'type':String, require:true},
+    "author":{'type':String, require:true},
+    "createDate":{'type':Date, default: new Date().getTime()},
+    "comments":[commentSchema]
+})
+
+// 未读消息 分为两种
+// 1. 评论消息(comment)
+// 2. 回复消息(reply)
+// 评论或回复对应的博客URL
+var unreadSchema = new mongoose.Schema({
+    "type":{"type":String, require: true},
+    "comment":{type:commentSchema},
+    "reply":{type:replySchema},
+    "blogTitle":{type:String},
+    "blogURL":{type:String},
+    "read":{"type":Boolean, default:false}
+})
+
+// 用户信息 包括用户名 密码 该用户发表的文章 未读的消息
+var userSchema = new mongoose.Schema({
+    "username":{'type':String, require:true},
+    "password":{'type':String, require:true},
+    "blog":[blogSchema],
+    "unread":[unreadSchema]
+})
+
+// 侧边栏元数据
+mongoose.model('metaSideNav', metaSideNavSchema)
+// 用户数据
+mongoose.model("user", userSchema)
+// 用户未读消息
+mongoose.model("unread", unreadSchema)
+// 博客
+mongoose.model("blog", blogSchema)
+// 博客评论
 mongoose.model("comment", commentSchema)
+// 评论回复
+mongoose.model("reply", replySchema)
 
-// 评论组 保存一个复杂对象数组，数组元素类型为comment
-var commentGroupSchema = new mongoose.Schema({
-    "commentId":[commentSchema]
-})
-mongoose.model("commentGroup", commentGroupSchema)
 
-// 具体文章内容 保存文章标题，具体内容以及关于本篇文章的所有评论组
-var blogItemSchema = new mongoose.Schema({
-    "subTitle":{'type':String, require:true},
-    "content":{'type':String, require:true},
-    // 评论组id，一篇文章可能有多组评论，每组评论又形成一个评论区
-    "commentGroupIds":[{"type":mongoose.Schema.Types.ObjectId}]
+
+var unreadTestSchema = new mongoose.Schema({
+    content:{'type':String, require:true},
 })
-mongoose.model('blogItem', blogItemSchema)
+mongoose.model("unreadTest", unreadTestSchema)
+
+var userTestSchema = new mongoose.Schema({
+    username:{'type':String, require:true},
+    unread:[unreadTestSchema]
+})
+mongoose.model("userTest", userTestSchema)
+
 
 module.exports = {
     getModel: (name) => {

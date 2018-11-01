@@ -6,7 +6,8 @@ import { LocaleProvider } from 'antd'
 import {
     BrowserRouter,
     Route,
-    Switch
+    Switch, 
+    Redirect
 } from 'react-router-dom';
 import "./App.css"
 import "./index.css"
@@ -15,13 +16,17 @@ import zh_CN from 'antd/lib/locale-provider/zh_CN'
 import 'antd/dist/antd.css'
 
 import Index from './route/Index'
+import Login from './route/Login'
+
+import CustomRouter from './route/CustomRouter'
 
 ReactDom.render(
     <LocaleProvider locale={zh_CN}> 
         <Provider {...store} >
             <BrowserRouter>
                 <Switch>
-                    <Route path='/' component={Index}/>
+                    <CustomRouter path="/login" component={Login} />
+                    <CustomRouter path="/" component={Index} />
                 </Switch>
             </BrowserRouter>
         </Provider>
