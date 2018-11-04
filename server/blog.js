@@ -409,12 +409,17 @@ Router.get('/showSide', (req, res) => {
 
 Router.get('/showUsers', (req, res) => {
     User.find({}, (err, doc) => {
-        // console.log('all users--->', doc)
         return res.json(doc)
     })
 })
 
-Router.get('/remove', (req, res) => {
+Router.get("/removeAll", (req, res) => {
+    User.remove({}, (err, doc) => {
+        return res.json({doc})
+    })
+})
+
+Router.get('/removeNav', (req, res) => {
     MetaSideNav.remove({}, (err, doc) => {
         if(err) return res.json({msg:err})
         return res.json(doc)
@@ -440,13 +445,8 @@ Router.post('/register', (req, res) => {
         userModel.save((err1, doc1) => {
             if(err1) return res.json({code:1, msg:"注册失败"})
             const {username, _id} = doc1;
-            // 生成新用户后为新用户绑定一个未读评论组，评论组中消息其他人评论之后添加
-            const unreadCommentGroup = new UnreadCommentGroup({to:doc1._id})
-            unreadCommentGroup.save((err2, doc2) => {
-                if(err2) return res.json({code:1, msg:"注册失败"})
-                res.cookie('cortezx_blog_userid', {id:doc1._id, username});
-                return res.json({code:0, data:{username, _id}})
-            })
+            res.cookie('cortezx_blog_userid', doc1._id + " " + username);
+            return res.json({code:0, data:{username, _id}})
         })
     })
 })
@@ -457,7 +457,7 @@ Router.post('/login', (req, res) => {
     User.findOne({username, password:md5Password(password)}, _filter, (err, doc) => {
         if(err) return res.json({code: 1, msg:"登录失败，请重试"})
         if(!doc) return res.json({code: 1, msg:"用户不存在"})
-        res.cookie("cortezx_blog_userid", {id:doc._id, username});
+        res.cookie("cortezx_blog_userid", doc._id + " " + username);
         return res.json({code:0, data:doc})
     })
 })
@@ -478,11 +478,23 @@ Router.get("/showBlogs", (req, res) => {
     })
 })
 
+Router.get("showUsers", (req, res) => {
+    User.find({}, (err, doc) => {
+        return res.json({doc})
+    })
+})
+
+Router.get("/removeBlogs", (req, res) => {
+    Blog.remove({}, (err, doc) => {
+        return res.json({doc})
+    })
+})
+
 // 获取某篇博客内容
 // 客户端请求中包含当前博客的URL，找到博客文档后将文档内容和评论(前5条)等发送给客户端
 Router.post("/showBlog", (req, res) => {
     const { key } = req.body
-    Blog.findOne({key}, {comments:{$slice:[0,5]}}, (err, doc) => {
+    Blog.findOne(key, (err, doc) => {
         if(err) return res.json({code:1, msg:err})
         return res.json({code:0, data:doc})
     })
@@ -548,7 +560,7 @@ Router.post('/addNewComment', (req, res) => {
     comment.save((err, doc) => {
         if(err) return res.json({code:1})
         // 将最新的评论添加到对应博客 最新的评论会在数组的最前面
-        Blog.updateOne({key:blogURL}, {$push:{comments:{$each:[doc], $position:0}}}, (err1, doc1) => {
+        Blog.findOneAndUpdate({key:blogURL}, {$push:{comments:{$each:[doc], $position:0}}}, {new:true}, (err1, doc1) => {
             if(err1) return res.json({code:1})
             // 评论添加到博客中后再将评论添加到博主的未读消息中
             const unread = new Unread({
@@ -561,9 +573,9 @@ Router.post('/addNewComment', (req, res) => {
             // 更新博主的未读消息 与博客一样 最新的评论会放在数组最前面
             unread.save((err2, doc2) => {
                 if(err2) return res.json({code:1})
-                User.findOne({username: author}, {$push:{unread:{$each:[doc2], $position:0}}}, (err3, doc3) => {
-                    if(err3) return res.json({code:1})
-                    return res.json({code:0})
+                User.findOneAndUpdate({username: author}, {$push:{unread:{$each:[doc2], $position:0}}}, (err3, doc3) => {
+                    if(err3) return res.json({code:1, msg:err3})
+                    return res.json({code:0, data:doc1})
                 })
             })
         })
@@ -574,10 +586,13 @@ Router.post('/addNewComment', (req, res) => {
 Router.post('/addNewReply', (req, res) => {
     const { blogURL, blogTitle, from, content, to, commentId } = req.body
     const reply = new Reply({content, from, to})
+    // 保存回复文档，doc为保存过的回复文档对象
     reply.save((err, doc) => {
-        if(err) return res.json({code:1})
-        Comment.updateOne({_id:commentId}, {$push:{replies:{$each:[doc], $position:0}}}, (err1, doc1) => {
-            if(err1) return res.json({code:1})
+        if(err) return res.json({code:1, msg:err})
+        // 更新博客中对应评论的回复，将该回复插入到回复数组的最前面 doc1为reply文档对象
+        Blog.findOneAndUpdate({key:blogURL, "comments._id":commentId},{$push:{"comments.$.replies":{$each:[doc], $position:0}}},{ new:true }, (err1, doc1) => {
+            if(err1) return res.json({code:2, msg:err1})
+            // 添加unread文档对象
             const unread = new Unread({
                 type:"reply",
                 reply:doc,
@@ -586,10 +601,10 @@ Router.post('/addNewReply', (req, res) => {
                 read: false
             })
             unread.save((err2, doc2) => {
-                if(err2) return res.json({code:1})
-                User.findOne({username: to}, {$push:{unread:{$each:[doc2], $position:0}}}, (err3, doc3) => {
-                    if(err3) return res.json({code:1})
-                    return res.json({code:0})
+                if(err2) return res.json({code:3, msg:err2})
+                User.findOneAndUpdate({username: to}, {$push:{unread:{$each:[doc2], $position:0}}}, (err3, doc3) => {
+                    if(err3) return res.json({code:4, msg:err3})
+                    return res.json({code:0, data:doc1})
                 })
             })
         })
@@ -670,9 +685,22 @@ Router.get('/commentTest/newpush', (req, res) => {
 })
 
 Router.get('/commentTest/unread', (req, res) => {
-    UnreadTest.findOne({content:"hell ohhhhhhh"}, (err, doc) => {
+    UnreadTest.find({}, (err, doc) => {
         return res.json({doc})
     })
+})
+
+
+Router.get('/commentTest/findAndUpdate', (req, res) => {
+    UnreadTest.findOneAndUpdate(
+        {"content":"hsdfgsadoasdbviapsdbds"},
+        {"$set":{"content":"update"}},
+        {new: true},
+        (err, doc) => {
+            if(err) return res.json(err)
+            return res.json(doc)
+        }
+    )
 })
 
 module.exports = Router

@@ -6,6 +6,8 @@ import CustomRouter from '../../route/CustomRouter'
 // 懒加载
 const Home = LoadableComponent(() => import('../../route/Home/index'))
 
+const Blog = LoadableComponent(() => import('../../route/Blog/index'))
+
 //基本组件Demo
 const ButtonDemo = LoadableComponent(()=>import('../../route/General/ButtonDemo/index'))
 const IconDemo = LoadableComponent(()=>import('../../route/General/IconDemo/index'))
@@ -77,6 +79,7 @@ export default class ContentMain extends Component {
                     <CustomRouter exact path='/home/antd/other/chart' component={BlogItem}/>
                     <CustomRouter exact path='/home/antd/other/404' component={ErrorPage}/>
                     <CustomRouter exact path='/home/antd/other/springText' component={SpringText}/>
+                    <CustomRouter path='/home/android' component={Blog}/>
                     <CustomRouter exact path='/home/addNewBlog' component={AddNewBlog}/>
                     <CustomRouter exact path='/home/about' component={About}/>
                     <Redirect exact from='/' to='/home'/>

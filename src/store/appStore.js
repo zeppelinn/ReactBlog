@@ -24,6 +24,8 @@ class AppStore{
     @observable blogAuthor = ""
     // 博客评论
     @observable blogComments = []
+    // 加载状态
+    @observable loading = false
 
     @action
     initSideMenu = () => {
@@ -37,6 +39,7 @@ class AppStore{
             })
     }
 
+    // 上传新博客
     @action
     uploadNewBlog = ({key, title, content, author}) => {
         axios.post('/blog/newBlog', {key, title, content, author})
@@ -47,11 +50,15 @@ class AppStore{
             })
     }
 
+    // 进入博客 展示博客内容 评论 回复等内容
     @action
-    showBlog = ({key}) => {
+    showBlog = (key) => {
+        this.loading = true
         axios.post("/blog/showBlog", {key})
             .then(res => {
+                this.loading = false
                 if(res.status === 200 && res.data.code === 0){
+                    console.log('showBlog---->', res.data.data)
                     this.blogKey = res.data.data.key
                     this.blogTitle = res.data.data.title
                     this.blogContent = res.data.data.content
@@ -62,6 +69,28 @@ class AppStore{
             })
     }
 
+    // 提交新的评论 如果后端提交新评论成功则修改blogComments通知前端页面修改
+    @action
+    uploadComment = ({ from, content }) => {
+        axios.post("/blog/addNewComment", {blogURL:this.blogKey, blogTitle:this.blogTitle, from, content, author:this.blogAuthor})
+            .then(res => {
+                if(res.status === 200 && res.data.code === 0){
+                    console.log('newcomment--->', res.data.data.comments)
+                    this.blogComments = res.data.data.comments
+                }
+            })
+    }
+
+    // 提交新回复 后端将新回复更新后返回带有新的回复的评论 前端同步更新
+    @action
+    uploadReply = ({ from, content, to, commentId }) => {
+        axios.post('/blog/addNewReply', {blogURL:this.blogKey, blogTitle:this.blogTitle, from, content, to, commentId})
+        .then(res => {
+            if(res.status === 200 && res.data.code === 0){
+                this.blogComments = res.data.data.comments
+            }
+        })
+    }
 }
 
 export default new AppStore()

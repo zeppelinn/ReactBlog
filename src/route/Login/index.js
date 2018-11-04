@@ -31,12 +31,13 @@ class LoginView extends Component{
     componentDidMount = () => {
         this.formCode()
     }
-    
-    goToRegister = () => {
-        console.log('gobackregister')
 
+    goToRegister = () => {
         this.props.switchShowBox('register')
-        setTimeout(() => this.props.form.resetFields(), 500)
+        setTimeout(() => {
+            this.props.form.resetFields()
+            this.formCode()
+        }, 500)
     }
 
     formCode = () => {
@@ -87,7 +88,6 @@ class LoginView extends Component{
         if(verification && verification.toUpperCase() === this.state.code.toUpperCase()){
             this.props.userStore.handleLogin({username, password})
                 .then(() => {
-                    // 登录成功 跳转首页
                     const {from} = this.props.location.state || {from: {pathname: '/'}}
                     this.props.history.push(from)
                 })

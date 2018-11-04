@@ -9,7 +9,8 @@ import hljs from 'highlight.js/lib/highlight';
 import java from 'highlight.js/lib/languages/java';
 import 'highlight.js/styles/solarized-dark.css'
 import { inject, observer } from 'mobx-react'
-
+import { withRouter } from 'react-router-dom'
+import BrowserCookies from 'browser-cookies'
 
 const content = {"entityMap":{},"blocks":[{"key":"637gr","text":"Initialized from content state.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}]};
 
@@ -38,7 +39,7 @@ var md = require('markdown-it')({
   }
 });
 
-@inject('appStore') @observer
+@withRouter @inject('appStore') @observer
 class BlogItem extends React.Component {
     state = {
         size: 'default',
@@ -85,6 +86,8 @@ class BlogItem extends React.Component {
     }
 
     componentDidMount() {
+        
+        console.log('props----->', BrowserCookies.get("cortezx_blog_userid"))
         this.props.appStore.showBlog({key:"/home/addNewBlog"})
         this.setState({
             loading: true,
@@ -108,8 +111,14 @@ class BlogItem extends React.Component {
     }
 
     updateCommentState = (index) => {
-        let tempArr = this.state.commentsShow.slice(0);
-        tempArr.splice(index, 1, !tempArr[index])
+        let tempArr = this.state.commentsShow.slice(0)
+        for (let i = 0; i < tempArr.length; i++) {
+            if(i === index){
+                tempArr[i] = !tempArr[index]
+            }else{
+                tempArr[i] = false
+            }
+        }
         this.setState({
             commentsShow:tempArr
         })
@@ -136,31 +145,44 @@ class BlogItem extends React.Component {
                 comment:'Android is shit'
             }
         ]
-        const commentView = (index) => (
-                this.state.commentsShow[index] ?
+        const commentView = (index) => {
+                console.log('commentView---->', this.state.commentsShow[index])
+                return this.state.commentsShow[index] ?
                 <div style={{backgroundColor:"#fafafa", marginLeft:10, marginRight:10}}>
-                    <List
+                    {comments.length === 0 ? null: <List
                         size="small"
                         dataSource={comments}
                         style={styles.listStyle}
                         renderItem={commentItem => (
                             <div style={{marginLeft:10}}>
-                                <p>{commentItem.comment} - {commentItem.name}</p>
+                                <p>{commentItem.comment}</p>
+                                <p style={{fontSize:10, marginLeft:100}}> - {commentItem.name}</p>
                             </div>
                         )}
-                        />
+                        />}
                     <Input style={{width:"90%", marginLeft:10}} placeholder={'和谐社会，文明发言'} ></Input>
-                    <Button style={{float:"right", right:"2%", marginTop:4}} type="primary" size={'small'}>发布</Button>
+                    <Button style={{float:"right", right:"2%", marginTop:4}} type="primary" size={'small'}>回复</Button>
                 </div> : null
-            )
+        }
         const MyComponent = () => {
             console.log('createMarkup---->', this.createMarkup())
             return <div dangerouslySetInnerHTML={this.createMarkup()}></div>
         }
+
+        const date = new Date()
+        const createTime = date.getUTCFullYear() + "-" + date.getMonth() + "-" + date.getDate()
+        const title = (
+            <div>
+                <p style={{fontSize:20}}>
+                基本用法
+                </p>
+                <p style={{fontSize:12, color:"#bbbbbb"}} >lijun &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {createTime}</p>
+            </div>
+        )
         return (
             <div>
                 <CustomBreadcrumb arr={['显示', '列表']}/>
-                <Card bordered={false} title='基本用法' style={{marginBottom: 10}} id='basicUsage'>
+                <Card bordered={false} title={title} style={{marginBottom: 10}} id='basicUsage'>
                     <MyComponent></MyComponent>
                 </Card>
                 <Card bordered={false} title='评论' style={{marginBottom: 10}} id='remoteLoading'>
@@ -168,7 +190,14 @@ class BlogItem extends React.Component {
                         dataSource={data2}
                         style={styles.listStyle}
                         split={false}
-                        pagination={{pageSize: 5}}
+                        pagination={
+                            {
+                                pageSize: 2,
+                                onChange: (page) => {
+
+                                }
+                            }
+                        }
                         renderItem={item => {
                             let index = data2.indexOf(item) % 5
                             return <div>
