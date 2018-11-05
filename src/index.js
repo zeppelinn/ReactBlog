@@ -17,6 +17,7 @@ import 'antd/dist/antd.css'
 
 import Index from './route/Index'
 import Login from './route/Login'
+import './config'
 
 import CustomRouter from './route/CustomRouter'
 

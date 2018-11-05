@@ -12,7 +12,7 @@ import { spawn } from 'child_process';
 
 const url = 'https://raw.githubusercontent.com/zeppelinn/mac_desktop/master/EI_Capitan_night.jpg'
 
-@withRouter @inject('userStore') @observer @Form.create()
+@withRouter @inject('appStore') @observer @Form.create()
 class LoginView extends Component{
 
     state = {
@@ -86,7 +86,7 @@ class LoginView extends Component{
         const password = this.props.form.getFieldValue('password')
         const verification = this.props.form.getFieldValue("verification")
         if(verification && verification.toUpperCase() === this.state.code.toUpperCase()){
-            this.props.userStore.handleLogin({username, password})
+            this.props.appStore.handleLogin({username, password})
                 .then(() => {
                     const {from} = this.props.location.state || {from: {pathname: '/'}}
                     this.props.history.push(from)
@@ -186,7 +186,7 @@ class LoginView extends Component{
     }
 }
 
-@inject('userStore') @observer @Form.create()
+@inject('appStore') @observer @Form.create()
 class RegisterView extends Component{
     state = {
         focusItem: -1
@@ -214,7 +214,7 @@ class RegisterView extends Component{
         const password = this.props.form.getFieldValue('registerPassword')
         const confirmPassword = this.props.form.getFieldValue('confirmPassword')
         if(password === confirmPassword){
-            this.props.userStore.handleRegister({username, password})
+            this.props.appStore.handleRegister({username, password})
                 .then(() => {
                     // 注册成功 跳转登录
                     console.log('注册成功')

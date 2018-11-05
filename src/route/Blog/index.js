@@ -36,7 +36,7 @@ class Blog extends React.Component{
         commentWarningInfo:"",
         commentWarning:false,
         replyWarningInfo:"",
-        replyWarning:false
+        replyWarning:false,
     }
 
     constructor(props){
@@ -52,11 +52,27 @@ class Blog extends React.Component{
     componentDidMount() {
         const key = this.props.location.pathname
         this.requestBlog({key})
+        this.requestUnread()
+    }
+
+    componentWillReceiveProps = (nextProps) => {
+        if(this.props.location.pathname !== nextProps.location.pathname){
+            const key = nextProps.location.pathname
+            this.requestBlog({key})
+            this.requestUnread()
+        }
     }
 
     // 请求当前页面内容
     requestBlog = ({key}) => {
         this.props.appStore.showBlog({key})
+    }
+
+    requestUnread = () => {
+        const mCookie = browserCookies.get('cortezx_blog_userid')
+        if(!mCookie || mCookie === '') return 
+        const userId = mCookie.split(' ')[0]
+        this.props.appStore.showUnread({userId})
     }
 
     // 将文章中的markdown转化成对应的html字段

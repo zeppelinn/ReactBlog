@@ -409,7 +409,13 @@ Router.get('/showSide', (req, res) => {
 
 Router.get('/showUsers', (req, res) => {
     User.find({}, (err, doc) => {
-        return res.json(doc)
+        return res.json({doc})
+    })
+})
+
+Router.get("/deleteBlog", (req, res) => {
+    Blog.remove({title:"Builder模式"}, (err, doc) => {
+        return res.json({doc})
     })
 })
 
@@ -517,26 +523,24 @@ Router.post("/showMoreComment", (req, res) => {
 // 判断客户端请求中的未读数量与当前数据库中的未读数量是否一致
 // 如果一致则返回一个标志位，避免流量消耗
 Router.post('/freshUnread', (req, res) => {
-    const { unreadNum, userId } = req.body
-    User.findOne({"_id":userId}, (err, doc) => {
+    const { userId } = req.body
+    User.findOne({"_id":userId},{"unread":{$elemMatch: { "read": false}}}, (err, doc) => {
         // 异常处理
-        if(err || !doc || !doc.unread) return res.json({code:1, msg:err, statu:1})
+        if(err || !doc || !doc.unread) return res.json({code:1, data:{msg:err, statu:1}})
         // 如果没有新消息或者数据库中新消息数量为0，则返回空标识
-        if(unreadNum === doc.unread.length || doc.unread.length === 0) return res.json({code:0, statu:0, msg:'没有新消息'})
+        if(doc.unread.length === 0) return res.json({code:0, data:{statu:0, msg:'没有新消息'}})
         // 如果消息数量发生改变，则将数据发送给前端
         // 发送的数据包括未读数据的数量以及最近五个更新的未读消息
         const length = doc.unread.length
         const brief = length > 4 ? doc.unread.slice(length-6, length -1) : doc.unread
-        return res.json({code:0, data:{length, brief}})
+        return res.json({code:0, data:{length, brief, statu:1}})
     })
 })
 
 // 用户点击某条未读消息之后，客户端根据未读消息中的URL跳转到对应路由
 // 同时通知服务端将该条消息改为已读
 Router.post('/updateOneUnread', (req, res) => {
-    const { userId, type, unreadId } = req.body
-    // UserTest.findOne({username:"lijun"},{"unread": {$elemMatch: { type, _id}}}, (err, doc) => {          //找到数组中的某一项
-    // User.update({_id:userId}, {"$pull":{"unread":{type, "_id":unreadId}}}, (err, doc) => {
+    const { userId, unreadId } = req.body
     User.updateOne({_id:userId,"unread._id":unreadId},{$set:{"unread.$.read":true}}, (err, doc) => {
         if(err) return res.json({code:1, msg:err})
         return res.json({code:0})
