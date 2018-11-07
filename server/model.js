@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const DB_URL = "mongodb://localhost:27017/my_test_blog"
+// const DB_URL = "mongodb://127.0.0.1:41204/react-blog"
 mongoose.connect(DB_URL);
 
 
